@@ -1,0 +1,13 @@
+namespace: &namespace dev
+replicaCount: &replicaCount 1
+
+# Service values:
+# User service
+user-chart:
+  namespace: *namespace
+  replicaCount: *replicaCount
+
+# Post service
+post-chart:
+  namespace: *namespace
+  replicaCount: *replicaCount

@@ -1,0 +1,57 @@
+version: "3.7"
+services:
+  #DB
+  users_db:
+    image: postgres:15.2
+    environment:
+      - POSTGRES_DB=users
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=root
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    ports:
+      - "5433:5432"
+    volumes:
+      - users_db:/var/lib/postgresql/data
+      - ./user-application/src/main/resources/db:/docker-entrypoint-initdb.d
+
+  posts_db:
+    image: postgres:15.2
+    environment:
+      - POSTGRES_DB=posts
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=root
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    ports:
+      - "5434:5432"
+    volumes:
+      - posts_db:/var/lib/postgresql/data
+      - ./post-application/src/main/resources/db:/docker-entrypoint-initdb.d
+
+  #Applications
+  users-app:
+    image: hahalinskidev211020/k8s-users-app:2.0.0
+    ports:
+      - "8001:8080"
+    environment:
+      - DB_HOST_PORT=users_db
+      - DB_NAME=users
+      - DB_USERNAME=admin
+      - DB_PASSWORD=root
+    depends_on:
+      - users_db
+
+  posts-app:
+    image: hahalinskidev211020/k8s-posts-app:2.0.0
+    ports:
+      - "8002:8080"
+    environment:
+      - USER_APP_URL=http://users-app:8080
+      - DB_HOST_PORT=posts_db
+      - DB_NAME=posts
+      - DB_USERNAME=admin
+      - DB_PASSWORD=root
+    depends_on:
+      - posts_db
+volumes:
+  users_db:
+  posts_db:

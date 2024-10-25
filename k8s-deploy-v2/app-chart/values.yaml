@@ -1,0 +1,13 @@
+namespace: &namespace k8s
+replicaCount: &replicaCount 2
+
+# Service values:
+# User service
+user-chart:
+  namespace: *namespace
+  replicaCount: *replicaCount
+
+# Post service
+post-chart:
+  namespace: *namespace
+  replicaCount: *replicaCount

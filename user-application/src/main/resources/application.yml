@@ -1,0 +1,25 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: user-application
+
+# DB
+  jpa:
+    show-sql: true
+  datasource:
+    url: jdbc:postgresql://${DB_HOST_PORT:localhost:5432}/${DB_NAME:users}
+    username: ${DB_USERNAME:admin}
+    password: ${DB_PASSWORD:root}
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  health:
+    livenessState:
+      enabled: true
+    readinessState:
+      enabled: true

@@ -1,0 +1,6 @@
+apiVersion: v2
+description: The full application. A Helm chart for Kubernetes training
+name: app
+type: application
+version: 1.0.0
+appVersion: "1.0.0"

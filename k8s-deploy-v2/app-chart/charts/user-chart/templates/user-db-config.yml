@@ -1,0 +1,13 @@
+# Configuration to init DBs
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-init-user-db
+  namespace: {{ .Values.namespace }}
+  {{- template "config.labels" . }}
+data:
+  init.sql: |
+    CREATE TABLE user_account(
+    id 				SERIAL 			PRIMARY KEY,
+    username 		VARCHAR (255) 	UNIQUE NOT NULL,
+    amountOfposts	VARCHAR (255));

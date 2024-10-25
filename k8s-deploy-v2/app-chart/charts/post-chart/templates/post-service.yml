@@ -1,0 +1,89 @@
+# The posts-app
+
+# Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-posts-app
+  namespace: {{ .Values.namespace }}
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ .Release.Name }}-posts-app-pod
+  ports:
+    - name: http
+      port: 8002
+      targetPort: 8080
+      protocol: TCP
+
+---
+
+# Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-posts-app
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-posts-app-pod
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-posts-app-pod
+        owner: aleh_hahalinski
+    spec:
+      containers:
+        - name: post-app-pod-container
+          image: hahalinskidev211020/k8s-posts-app:2.0.0
+          ports:
+            - name: liveness-port
+              containerPort: 8080
+          env:
+            - name: USER_APP_URL
+              value: http://{{ .Release.Name}}-users-app:8001
+            - name: DB_HOST_PORT
+              value: "{{ .Release.Name}}-posts-db"
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-post-db-credentials
+                  key: dbname
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-post-db-credentials
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-post-db-credentials
+                  key: password
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: liveness-port
+            failureThreshold: 2
+            periodSeconds: 10
+            initialDelaySeconds: 25
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: liveness-port
+            failureThreshold: 3
+            periodSeconds: 3
+            initialDelaySeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: liveness-port
+            failureThreshold: 3
+            periodSeconds: 5
+            initialDelaySeconds: 5

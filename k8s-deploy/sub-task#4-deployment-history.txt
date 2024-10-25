@@ -1,0 +1,41 @@
+kubectl set image deployment/posts-app post-app-pod-container=hahalinskidev211020/k8s-posts-app:2.1.0 -n=k8s-project
+
+1. check the revisions of this Deployment:
+        kubectl rollout history deployment/posts-app -n=k8s-project
+
+    Result:
+        REVISION  CHANGE-CAUSE
+        5         <none>
+        6         kubectl.exe set image deployment/posts-app post-app-pod-container=hahalinskidev211020/k8s-posts-app:2.1.0 --namespace=k8s-project --record=true
+
+    if we need to see some details:
+        kubectl rollout history deployment/posts-app -n=k8s-project --revision=6
+
+    Result:
+        deployment.apps/posts-app with revision #6
+          Labels:       app=posts-app-pod
+                        owner=aleh_hahalinski
+          Containers:
+           post-app-pod-container:
+            Image:      hahalinskidev211020/k8s-posts-app:2.0.0
+            Port:       8080/TCP
+            Host Port:  0/TCP
+            Liveness:   http-get http://:liveness-port/actuator/health/liveness delay=5s timeout=1s period=3s #success=1 #failure=3
+            Startup:    http-get http://:liveness-port/actuator/health delay=25s timeout=1s period=10s #success=1 #failure=2
+            Environment:
+              USER_APP_URL:     http://users-app:8001
+              DB_URL:   jdbc:postgresql://posts-db/posts
+              DB_USERNAME:      <set to the key 'posts_app_db_username' in secret 'db-credentials'>     Optional: false
+            Mounts:     <none>
+
+2. Rolling Back to a Previous Revision
+        kubectl rollout undo deployment/posts-app -n=k8s-project
+
+    Result:
+        deployment.apps/posts-app rolled back
+
+   Alternatively, you can rollback to a specific revision by specifying it with --to-revision:
+        kubectl rollout undo deployment/posts-app -n=k8s-project --to-revision=6
+
+   To check the rollout status:
+        kubectl rollout status deployment/posts-app -n=k8s-project

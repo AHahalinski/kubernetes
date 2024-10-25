@@ -1,0 +1,112 @@
+# The users-app
+
+# Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-users-app
+  namespace: {{ .Values.namespace }}
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ .Release.Name }}-users-app-pod
+  ports:
+    - name: http
+      port: 8001
+      targetPort: 8080
+      protocol: TCP
+
+---
+
+# Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-users-app
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-users-app-pod
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-users-app-pod
+        owner: aleh_hahalinski
+    spec:
+      containers:
+        - name: user-app-pod-container
+          image: hahalinskidev211020/k8s-users-app:2.0.0
+          ports:
+            - name: liveness-port
+              containerPort: 8080
+          env:
+            - name: DB_HOST_PORT
+              value: "{{ .Release.Name }}-users-db"
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-user-db-credentials
+                  key: dbname
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-user-db-credentials
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-user-db-credentials
+                  key: password
+          volumeMounts:
+            - name: storage
+              mountPath: /data/service
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: liveness-port
+            failureThreshold: 2
+            periodSeconds: 10
+            initialDelaySeconds: 25
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: liveness-port
+            failureThreshold: 3
+            periodSeconds: 3
+            initialDelaySeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: liveness-port
+            failureThreshold: 3
+            periodSeconds: 5
+            initialDelaySeconds: 5
+      volumes:
+        - name: storage
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-user-app-pvc
+
+---
+
+# Persistent Volume Claim
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Release.Name }}-user-app-pvc
+  namespace: {{ .Values.namespace }}
+  labels:
+    type: users-app-storage-claim
+spec:
+  storageClassName: hostpath
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi

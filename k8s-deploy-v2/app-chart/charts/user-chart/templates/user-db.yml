@@ -1,0 +1,84 @@
+# DB for the users-app
+
+# Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-users-db
+  namespace: {{ .Values.namespace }}
+spec:
+  clusterIP: None
+  ports:
+    - port: 5432
+  selector:
+    app: {{ .Release.Name }}-users-db-pod
+
+---
+
+# Deployment
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Release.Name }}-users-db
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-users-db-pod
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-users-db-pod
+    spec:
+      containers:
+        - name: users-db-pod-container
+          image: postgres:15.2
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-user-db-credentials
+                  key: dbname
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-user-db-credentials
+                  key: username
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-user-db-credentials
+                  key: password
+          volumeMounts:
+            - name: storage
+              mountPath: /var/lib/postgresql/data
+            - name: users-db-init
+              mountPath: /docker-entrypoint-initdb.d
+      volumes:
+        - name: users-db-init
+          configMap:
+            name: {{ .Release.Name }}-init-user-db
+            items:
+              - key: init.sql
+                path: init.sql
+        - name: storage
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-users-pvc
+
+---
+
+# Persistent Volume Claim
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Release.Name }}-users-pvc
+  namespace: {{ .Values.namespace }}
+  labels:
+    type: {{ .Release.Name }}-users-pvc
+spec:
+  storageClassName: hostpath
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 250Mi

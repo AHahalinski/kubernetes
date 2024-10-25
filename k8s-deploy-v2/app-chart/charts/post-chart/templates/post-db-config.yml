@@ -1,0 +1,15 @@
+# Configuration to init DBs
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-init-post-db
+  namespace: {{ .Values.namespace }}
+  {{- template "config.labels" . }}
+data:
+  init.sql: |
+    CREATE TABLE post(
+    id 				SERIAL 			PRIMARY KEY,
+    author_id 		INT 			NOT NULL,
+    topic 			VARCHAR (255) 	        ,
+    text 			VARCHAR (255) 	NOT NULL,
+    posted_at		TIMESTAMPTZ		NOT NULL );

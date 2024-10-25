@@ -1,0 +1,63 @@
+version: "3.7"
+services:
+  #DB
+  users_db:
+    image: postgres:15.2
+    environment:
+      - POSTGRES_DB=users
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=root
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    ports:
+      - "5433:5432"
+    volumes:
+      - users_db:/var/lib/postgresql/data
+      - ./user-application/src/main/resources/db:/docker-entrypoint-initdb.d
+
+  posts_db:
+    image: postgres:15.2
+    environment:
+      - POSTGRES_DB=posts
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=root
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    ports:
+      - "5434:5432"
+    volumes:
+      - posts_db:/var/lib/postgresql/data
+      - ./post-application/src/main/resources/db:/docker-entrypoint-initdb.d
+
+  #Applications
+  discovery:
+    image: hahalinskidev211020/k8s-discovery:1.0.0
+    ports:
+      - "8000:8080"
+    environment:
+      - EUREKA_URI=http://host.docker.internal:8000/eureka
+
+  users_app:
+    image: hahalinskidev211020/k8s-users-app:1.0.0
+    ports:
+      - "8001:8080"
+    environment:
+      - EUREKA_URI=http://discovery:8080/eureka
+      - DB_URL=jdbc:postgresql://users_db/users
+      - DB_USERNAME=admin
+      - DB_PASSWORD=root
+    depends_on:
+      - users_db
+
+  posts-app:
+    image: hahalinskidev211020/k8s-posts-app:1.0.0
+    ports:
+      - "8002:8080"
+    environment:
+      - EUREKA_URI=http://discovery:8080/eureka
+      - DB_URL=jdbc:postgresql://posts_db/posts
+      - DB_USERNAME=admin
+      - DB_PASSWORD=root
+    depends_on:
+      - posts_db
+volumes:
+  users_db:
+  posts_db:
